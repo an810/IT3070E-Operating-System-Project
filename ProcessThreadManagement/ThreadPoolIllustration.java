@@ -1,3 +1,4 @@
+import java.util.Comparator;
 import java.util.concurrent.*;
 
 public class ThreadPoolIllustration {
@@ -32,15 +33,19 @@ public class ThreadPoolIllustration {
 
     private static long calculateSumThreadPool(int n) {
         int numThreads = Runtime.getRuntime().availableProcessors(); // Get the number of available processors
-        ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
+
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
+                numThreads, numThreads,
+                0L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>());
+
+        // Create a CompletionService to manage completed tasks
+        CompletionService<Long> completionService = new ExecutorCompletionService<>(threadPoolExecutor);
 
         int batchSize = n / numThreads;
         int remainder = n % numThreads;
 
-        // Create a list to store Future<Long> objects
-        CompletionService<Long> completionService = new ExecutorCompletionService<>(executorService);
-
-        // Submit tasks to the thread pool
+        // Submit tasks to the thread pool dynamically
         int start = 1;
         for (int i = 0; i < numThreads; i++) {
             int end = start + batchSize - 1;
@@ -73,7 +78,7 @@ public class ThreadPoolIllustration {
         }
 
         // Shut down the thread pool
-        executorService.shutdown();
+        threadPoolExecutor.shutdown();
 
         return totalSum;
     }
@@ -85,4 +90,5 @@ public class ThreadPoolIllustration {
         }
         return partialSum;
     }
+
 }

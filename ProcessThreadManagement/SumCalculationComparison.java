@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.*;
 
 public class SumCalculationComparison {
@@ -38,7 +40,7 @@ public class SumCalculationComparison {
         int remainder = n % numThreads;
 
         // Create a list to store Future<Long> objects
-        CompletionService<Long> completionService = new ExecutorCompletionService<>(executorService);
+        List<Future<Long>> futures = new ArrayList<>();
 
         // Submit tasks to the thread pool
         int start = 1;
@@ -51,20 +53,19 @@ public class SumCalculationComparison {
             // Submit a Callable task to compute the sum in the given range
             int finalStart = start;
             int finalEnd = end;
-            completionService.submit(() -> calculatePartialSum(finalStart, finalEnd));
+            futures.add(executorService.submit(() -> calculatePartialSum(finalStart, finalEnd)));
 
             start = end + 1;
         }
 
-        // Retrieve results from completed tasks
+        // Retrieve results from completed tasks dynamically
         long totalSum = 0;
-        try {
-            for (int i = 0; i < numThreads; i++) {
-                Future<Long> future = completionService.take();
+        for (Future<Long> future : futures) {
+            try {
                 totalSum += future.get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
             }
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
         }
 
         // Shut down the thread pool
@@ -72,6 +73,7 @@ public class SumCalculationComparison {
 
         return totalSum;
     }
+
 
     private static long calculatePartialSum(int start, int end) {
         long partialSum = 0;
